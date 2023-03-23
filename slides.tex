@@ -12,6 +12,9 @@
 \usepackage{tikz}
 \usetikzlibrary{shapes, arrows}
 
+\usepackage[style=verbose,backend=biber]{biblatex}
+\addbibresource{refs.bib}
+
 
 \title{Fast* Implementations of Finite Fields \\ and Elliptic Curves in Lean 4}
 \author{Matej Penciak}
@@ -319,7 +322,7 @@
         \draw [->] (primefield) -- (newfield);
     \end{tikzpicture}
 
-    (thanks ChatGPT)
+    %thanks ChatGPT
 
 \end{frame}
 
@@ -696,10 +699,30 @@ class CurveGroup {F : outParam $ Type _} [Field F]
     \end{center}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[allowframebreaks]
     \frametitle{References}
+    \nocite{BERGERON1989403}
+    \nocite{cryptoeprint:2023/369}
+    \nocite{cryptoeprint:2012/549}
+    \nocite{10.1007/3-540-44647-8_11}
+    \nocite{cohen2005handbook}
+    \nocite{joyofcryptography}
+    \printbibliography
 
-    TODO
+\end{frame}
 
+\begin{frame}
+    \frametitle{References III}
+
+    \begin{enumerate}
+        \item \url{https://electriccoin.co/blog/the-pasta-curves-for-halo-2-and-beyond/}
+        \item \url{https://github.com/zcash/pasta_curves}
+        \item \url{https://github.com/zcash/pasta}
+    \end{enumerate}
+
+    \vspace{30pt}
+
+    {\bf Check us out at:}
+    \url{https://github.com/lurk-lab/}
 \end{frame}
 \end{document}
