@@ -13,10 +13,10 @@
 \usetikzlibrary{shapes, arrows}
 
 
-\title{Fast* Implementations of Finite Fields and Elliptic Curves in Lean 4}
+\title{Fast* Implementations of Finite Fields \\ and Elliptic Curves in Lean 4}
 \author{Matej Penciak}
 \institute{Lurk Lab}
-\date{March 23, 2023 \\ Slides available at: \\ TODO: INCLUDE LINK}
+\date{March 23, 2023 \\ Slides available at: \\ \url{https://github.com/mpenciak/LLL2023}}
 \titlegraphic{\includegraphics[width = .14\textwidth]{img/lurk_lab_logo.png}}
 
 \begin{document}
@@ -26,17 +26,17 @@
 \begin{frame}
     \frametitle{Outline}
     \begin{enumerate}
-        \item Motivation: what we're building at Lurk Lab
+        \item Motivation: What we're building at Lurk Lab
         \item A bit about zero knowledge cryptography
-        \item Optimized FF arithmetic
+        \item Optimizing FF arithmetic
         \begin{itemize}
-            \item Add chains for fast exponentiation
+            \item Addition chains for fast exponentiation
             \item Batched inversion
             \item Montgomery form
         \end{itemize}
-        \item Optimized Elliptic Curve arithmetic
+        \item Optimizing elliptic Curve arithmetic
         \begin{itemize}
-            \item Point representation
+            \item Choice of coordinates
             \item Efficient endomorphisms
             \item Multi-scalar multiplication
         \end{itemize}
@@ -49,15 +49,19 @@
     \frametitle{Motivation}
     {\bf Who am I?} Software engineer and aspiring cryptographer at Lurk Lab (Formerly Yatima).
 
+    \pause
     \vspace{5pt}
 
     {\bf What is Lurk Lab?} We're building the Lurk programming language, and an ecosystem of tools around it.
     Examples: The Yatima compiler and content addresser, a Lean typechecker, and the cryptography to generate ``Lurk proofs''
 
+    \pause
     \vspace{5pt}
 
     {\bf What is Lurk?} Lurk is a turing complete programming language in the style of Lisp which generates zero knowledge proofs of execution.
 
+    \pause
+    \vspace{5pt}
 
     If I run a Lurk program \verb+f+, I can prove things like:
     \begin{itemize}
@@ -71,14 +75,22 @@
 \begin{frame}[fragile]
     \frametitle{A little about zero knowledge proofs}
 
-    Modern perspective on zero knowledge proofs: they are built out of two components
+    Two components to a zero knowledge proof system:
     \begin{itemize}
         \item An interactive proof scheme (the ``information-theoretic'' component)
         \item A commitment scheme (the ``cryptographic'' component)
     \end{itemize}
 
-    An IP scheme is a protocol between two parties \verb+P+ (prover) and \verb+V+ (verifier)
+    \vspace{7pt}
+    \pause
+
+    An {\bf IP scheme} is a protocol between two parties \verb+P+ (prover) and \verb+V+ (verifier)
     where (the potentially untrustworthy) \verb+P+ can provide a convincing argument to \verb+V+ that they know some fact/have performed some computation.
+    
+    \vspace{7pt}
+    \pause
+
+    A {\bf commitment scheme} is an interactive protocol for one party to commit to some data (a vector, polynomial, etc...) without revealing its value. The commitment can be opened later, and it should be computationally infeasible for the committer to change their committed value
 
 \end{frame}
 
@@ -86,6 +98,8 @@
     \frametitle{An example IP}
 
     \verb+P+ and \verb+V+ agree to two graphs $G_1$ and $G_2$, and \verb+P+ wants to prove to \verb+V+ that they know an isomorphism $\phi : G_1 \to G_2$ without revealing the isomorphism.
+
+    \pause
 
     \begin{enumerate}
         \item \verb+P+ chooses a random permutation $\sigma$ of $G_1$, and sends $H = \sigma(G_1)$ to  \verb+V+
@@ -95,7 +109,11 @@
         \item Repeat until \verb+V+ is sufficiently convinced
     \end{enumerate}
 
+    \pause 
     This protocol is {\bf complete}, {\bf knowledge sound}, and {\bf zero knowledge}
+
+    \vspace{5pt}
+    \pause
 
     It is not: {\bf non-interactive}, or {\bf succinct}
 
@@ -105,11 +123,14 @@
 \begin{frame}
     \frametitle{The basic building blocks for cryptography}
 
-    Add some cryptography to the IPs:
+    %Add some cryptography to the IPs:
 
     Work over finite fields, and encode our computations in so-called ``arithmetic circuits''.
 
     The level of security necessary is measured in the number of ``bits'' of security. To prevent a dishonest prover from forging a fraudulent proof, a good estimate is $\approx 128$ bits of security.
+    
+    \vspace{6pt}
+    \pause
 
     {\bf Example 1}: The fastest (publicly) known factorization/discrete logarithm algorithm is the general number field sieve method with complexity
     $$\mathrm{exp}\left(\left(\sqrt[3]{\frac{64}{9}} + o(1)\right)(log n)^{\frac{1}{3}} (\log \log n)^{\frac{2}{3}}\right)$$
@@ -127,9 +148,12 @@
 
     To achieve $\approx 128$ bits of security we only need a curve with $\approx 2^{256}$ number of points.
 
-    Thanks to Hasse's bounds, it's ``easy'' to find elliptic curves with enough points, if $E$ is an elliptic curve defined over a finite field with $q$ elements, then the number of points $N$ is bounded by:
+    \vspace{6pt}
+    \pause
+    
+    Hasse's bound, makes it ``easy'' to find elliptic curves with enough points -- if $E$ is an elliptic curve defined over a finite field with $p$ elements, then the number of points $N$ is bounded by:
 
-    $$\left| N - (q + 1)\right| \leq 2 \sqrt{q}$$
+    $$\left| N - (p + 1)\right| \leq 2 \sqrt{p}$$
 
     When we discuss curves, we will see some magical curves with extra nice properties
 
@@ -146,6 +170,9 @@
         | a, Nat.zero   => a
         | a, Nat.succ b => Nat.succ (Nat.add a b)
     \end{minted}
+
+    \vspace{6pt}
+    \pause
     
     which calls the C function defined in \verb+lean.h+
 
@@ -162,6 +189,9 @@
 
     Lean uses the {\bf G}NU {\bf M}ulti{\bf P}recision library on Linux based systems. Mac and Windows get a home-brewed version written in the Lean 4 C++ runtime code.
 
+    \vspace{6pt}
+    \pause
+
     Both implementations represent \verb+Nat+s as arrays of \verb+UInt64+s, and define arithmetic in base $2^{64}$. If $n$ is the number of ``limbs'' (\verb+uint64_t+s in C) then the efficiency of some of the most commonly employed algorithms are:
 
     \begin{enumerate}
@@ -172,7 +202,10 @@
         \item Strassen FFT algorithm: $O(n \log n \log \log n)$
     \end{enumerate}
 
-    Because our goal is to work in a fixed-precision finite field, we tried replacing the natural choice of \verb+Nat+ with a fixed precision arithmetic based off Lean's \verb+ByteArray+ type.
+    \vspace{6pt}
+    \pause
+
+    We tried using fixed precision arithmetic based off Lean's \verb+ByteArray+ type instead of \verb+Nat+.
 
     This turned out to be $\approx 100 \times$ slower than \verb+Nat+, so we quickly dropped that plan.
 
@@ -181,9 +214,12 @@
 \begin{frame}[fragile]
     \frametitle{A comment on benchmarking and testing}
 
-    Testing and benchmarking is very important for non-formalized systems.
+    Testing and benchmarking is important for non-formalized systems.
 
     For testing we have built a testing framework called \verb+LSpec+ which is expressive and easy to use.
+
+    \pause
+    \vspace{6pt}
 
     \begin{minted}{Lean}
     #lspec check "add_comm"
@@ -192,7 +228,7 @@
         (forall n m : Nat, n^2 + m^2 >= n^3 + m)
     \end{minted}
 
-    which returns
+    \vspace{6pt}
 
     \begin{verbatim}
     ? add_comm
@@ -215,10 +251,10 @@
     import YatimaStdLib.Benchmark
     import YatimaStdLib.AddChain
 
-    open Benchmark Exp
+    open Benchmark
 
     def f1 : Nat → Nat := (37 ^ .)
-    def f2 : Nat → Nat := fastExp 37
+    def f2 : Nat → Nat := Exp.fastExp 37
     def addChainBench : Comparison f1 f2 where
         inputs := #[10000000, 15000000,  ...]
 
@@ -261,6 +297,10 @@
         \item \verb+GaloisField+: Fields obtained as extension fields of a base field
     \end{itemize}
 
+    \vspace{6pt}
+    \pause
+    No \verb+Prop+ valued fields! Nothing is formalized (yet).
+
 \end{frame}
 
 \begin{frame}
@@ -296,11 +336,11 @@ class Ring (R : Type _) extends Add R, Mul R, Sub R,
 \begin{minted}{lean}
 class PrimeField (K : Type _) extends Field K where
     char : Nat -- characteristic
-    sqrt : K → Option K -- Efficient `sqrt` implementation
+    sqrt : K → Option K -- Fast `sqrt` implementation
     content : Nat -- char.log2
     twoAdicity : Nat x Nat -- `(s, r)` where `p-1 = 2^s * r'
-    legAC : Array ChainStep -- Pre-computed addchains to
-    frobAC : Array ChainStep -- calculate ^p and ^(p-1)/2
+    legAC : Array ChainStep  -- Pre-computed AddChains to
+    frobAC : Array ChainStep -- calculate .^p and .^(p-1)/2
     fromNat : Nat → K -- to and from `Nat`' methods
     natRepr : K → Nat
     batchedExp : K → Array Nat → Array K
@@ -316,14 +356,24 @@ class PrimeField (K : Type _) extends Field K where
 
     Naive implementation: $a ^ N = a \cdot a^ {N -1}$ is $O(N)$ (too slow)
 
-    Square and multiply method requires $\approx \frac{3}{2} \log N$ operations 
-    ($\log N$ squarings plus the average Hamming weight of $N$'s binary expansion)
-    (WARNING: susceptible to side channel attacks)
+    \pause
+    \vspace{6pt}
 
-    For common exponents ($p$ and $\frac{p-1}{2}$): pre-compute a minimal length``addition chain'':
+    Square and multiply method requires $\approx \frac{3}{2} \log N$ operations
+
+    ($\log N$ squarings plus the Hamming weight of $N$'s binary expansion)
+    ({\bf WARNING}: susceptible to side channel attacks)
+
+    \pause
+    \vspace{6pt}
+
+    For commonly used exponents ($p$ and $\frac{p-1}{2}$): pre-compute a minimal length``addition chain'':
     $[n_1, n_2, n_3, ..., n_r = N]$ where each $n_i = n_k + n_l$ for $k, l < i$. 
 
-    {\bf Example}: Calculating the Frobenius modulo the prime
+    \pause
+    \vspace{6pt}
+
+    {\bf Example}: Calculating the Frobenius modulo the prime:
     \begin{small} \verb+0x40000000000000000000000000000000224698fc094cf91b992d30ed00000001+ \end{small}
     $381$ field ops using square and multiply, and $337$ field ops using a minimal addition chain.
 \end{frame}
@@ -337,7 +387,10 @@ class PrimeField (K : Type _) extends Field K where
 
     To invert $[n_1, n_2, n_3, \ldots, n_r]$, calculate $N_j = \prod_i^j n_i$ for $j = 1, \ldots, r$ caching the results. Invert $N_r$. Recover all of the $n_i^{-1}$ by multiplying with the cached results. 
 
-    {\bf Example:} $[2, 3, 5]$.
+    \vspace{6pt}
+    \pause
+
+    {\bf Example:} Inverting the set $[2, 3, 5]$.
     
     \begin{enumerate}
         \item Calculate $N_1 = 2$, $N_2 = 6$, $N_3 = 30$. 
@@ -359,25 +412,32 @@ class PrimeField (K : Type _) extends Field K where
 
     Naive algorithm: Calculate $a \cdot b \mod p$, but this requires division by $p$ for every multiplication. 
 
+    \pause
+    \vspace{6pt}
+
     {\bf Intuition behind the solution}: Replace reduction modulo $p$ with reduction modulo $R$ for some other $R$.
 
     Let $R > p$ be a number co-prime to $p$ for which division and reduction modulo $R$ is efficient. 
 
     In practice: Choose $R$ to be a power of 2 greater than $p$.
 
+    Represent $n \in \mathbb{Z} / p \mathbb{Z}$ in "Montgomery form" $[n]_w = n \cdot R \mod p$.
+
     Montgomery reduction is an efficient algorithm that calculates $n R^{-1} \mod p$ using only arithmetic modulo $R$.
 
-    Represent $n$ in "Montgomery form" $[n]_w = n \cdot R \mod p$.
+    \vspace{6pt}
+    \pause
 
     Addition: $[n]_w + [m]_w = (n + m) \cdot R \mod p = [n + m]_w$
 
-    Multiplication: $[n]_w \cdot [m]_w = (n \cdot m) R^2 \mod p = [n \cdot m]_w R \mod p$
+    Multiplication: $[n]_w \cdot [m]_w = (n \cdot m) R^2 \mod p = [n \cdot m]_w R \mod p$ \\
+    $\longrightarrow$ Montgomery reduce $[n \cdot m]_w$
 \end{frame}
 
 \begin{frame}[fragile]
     \frametitle{NewField implementation}
 
-    We implement a \verb+macro_rule+ that expands the following declaration
+    We implemented a \verb+macro_rule+ that expands the following declaration
 
     \begin{minted}{lean}
     new_field TestField with
@@ -388,16 +448,21 @@ class PrimeField (K : Type _) extends Field K where
 
     into a type \verb+TestField+ with pre-computations and arithmetic, instances, and methods implemented. 
 
+    \vspace{6pt}
+    \pause
+
     Not advised to be used yet: Missing some key GMP methods to make Montgomery reduction more efficient
     (\verb+mpz_tdiv_r_2exp+).
 
-    Part of Montgomery reduction of $a \in \mathbb N$ involves calculating $a \mod R$. 
+    \vspace{6pt}
+
+    Part of Montgomery reduction of $a\cdot R \in \mathbb N$ involves working modulo $R$, which is not more efficient in Lean at this time.
 
 \end{frame}
 \begin{frame}[fragile]
     \frametitle{Elliptic Curves}
 
-    Short term goals have us working with curves defined over fields of large characteristic, so representing a curve is simple:
+    Immediate goals are to work with curves defined over fields of large characteristic, so short Weierstrass form is fine:
 
     \begin{minted}{lean}
 /--
@@ -418,14 +483,21 @@ structure Curve (F : Type _) [Field F] where
     Arithmetic is more interesting:
     
     \begin{minted}{lean}
-class CurveGroup {F : outParam $ Type _} [Field F] (K : Type _) (C : outParam $ Curve F)  where 
+class CurveGroup {F : outParam $ Type _} [Field F] 
+        (K : Type _) (C : outParam $ Curve F)  where 
     zero : K
     inv : K → K
     add : K → K → K
     double : K → K
     \end{minted}
     
+    \vspace{6pt}
+    \pause
+
     Separating the curve from its arithmetic is important to allow for different coordinate systems on the same curve.
+
+    \vspace{6pt}
+    \pause
     
     Projective coordinates avoid field inversions!
 
@@ -437,9 +509,11 @@ class CurveGroup {F : outParam $ Type _} [Field F] (K : Type _) (C : outParam $ 
 
 \begin{frame}
     \frametitle{Coordinate breakdown}
-    \begin{center}
+    \begin{figure}[h]
+    \caption{Chart taken from \emph{Handbook of Elliptic and Hyperelliptic Curve Cryptography}}
+    \centering
     \includegraphics[height = .75\textheight]{img/coordinate_breakdown.png}
-    \end{center}
+    \end{figure}
 \end{frame}
 
 \begin{frame}
@@ -448,7 +522,7 @@ class CurveGroup {F : outParam $ Type _} [Field F] (K : Type _) (C : outParam $ 
     \includegraphics[height = .70\textheight]{img/screenshot.png}
     \end{center}
 
-    Reason: Ensure Lean is evaluating the arithmetic expressions to minimize finite field arithmetic
+    Reason: Ensure Lean is evaluating the arithmetic expressions to minimize finite field operations.
 \end{frame}
 
 \begin{frame}[fragile]
@@ -456,56 +530,78 @@ class CurveGroup {F : outParam $ Type _} [Field F] (K : Type _) (C : outParam $ 
 
     Given $n \in \mathbb{N}$ and $P \in C$, want to calculate $n \cdot P$.
 
-    If $C$ has prime order, and an efficiently computable endomorphism $\Phi : C \to C$ then
-    $\Phi(P) = \Lambda \cdot P$ for some $\Lambda \in \mathbb{N}$
+    \vspace{6pt}
+    \pause
+
+    If $C$ has prime order $q$, and an efficiently computable endomorphism $\Phi : C \to C$ then
+    $\Phi(P) = \Lambda \cdot P$ for some $\Lambda \in \mathbb{N}$.
+
+    Given $n \in \mathbb N$, calculate find $n_1$ and $n_2$ of size $O(\sqrt n)$ such that
+    
+    $$
+    n = n_1 + \Lambda n_2 \mod q
+    $$
+
+    \vspace{6pt}
+    \pause
 
     Use this to compute 
 
     $$n \cdot P = (n_1 + \Lambda n_2) \cdot P = n_1 \cdot P + n_2 \cdot \Phi(P)$$
 
-    where $n_1$ and $n_2$ are $O(\sqrt n)$
+    \vspace{6pt}
+    \pause
+
+    If the curve $C$ is defined as $y^2 = x^3 + b$ then $\Phi:(x : y : z) \mapsto (\zeta x : y : z)$ for $\zeta \in \mu_3$ works.
+
+    \pause
+    \vspace{6pt}
 
     This optimization was subject to the patent \verb+US7995752B2+
-    ``Method for accelerating cryptographic operations on elliptic curves''
+    \emph{Method for accelerating cryptographic operations on elliptic curves}
     which expired in 2020
-
-    If the curve $C$ is defined as $y^2 = x^3 + b$ then $(x : y : z) \mapsto (\zeta x : y : z)$ for $\zeta \in \mu_3$ is a candidate endomorphism.
 
 \end{frame}
 
 \begin{frame}[fragile]
     \frametitle{Some very magical curves}
     
-    The curve is $y^2 = x^3 + 5$ over 
+    The curve $y^2 = x^3 + 5$ defined over over $\mathbb{F}_p$ and $\mathbb{F}_q$ with primes \\ $p = $ 
     \begin{small}\verb+0x40000000000000000000000000000000224698fc094cf91b992d30ed00000001+\end{small}
     (Pallas)
-    and
+    and \\ $q = $
     \begin{small}\verb+0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000001+\end{small}
     (Vesta) 
 
+    \vspace{6pt}
+    \pause
+
     Nice properties of the Pasta curves:
     \begin{enumerate}
-        \item The group of points on one is cyclic of order equal to the characteristic of the other's base field.
+        \item $\#(E_{\text{Pallas}}) = q$ and $\#(E_{\text{Vesta}}) = p$
         \item Efficiently computable endomorphism for the GLV optimization.
         \item Large 2-adicity ($p-1$ is divisible by $2^{32}$)
         \item Both primes are of the form $2^{255} + \epsilon$ which helps with reduction in $\mathbb F_p$
-        \item Both have low-degree isogenies with non-zero $j$-invariant (this helps with generating random points on the curves).
+        \item Both have low-degree isogenies with non-zero $j$-invariant (helps with generating random points on the curves).
     \end{enumerate}
-
-    The story of how the curve was discovered is fascinating.
 
 \end{frame}
 
 \begin{frame}
     \frametitle{Multiscalar Multiplication}
 
-    The multi-exponentiation problem is the following: Given a set of list of integers $[n_1, n_2, \ldots, n_r]$ and a list of group elements $[g_1, g_2, \ldots, g_r]$ calculate $\prod_i^r g_i^{n_i}$.
+    The multi-exponentiation problem: Given a set of list of integers $[n_1, n_2, \ldots, n_r]$ and a list of group elements $[g_1, g_2, \ldots, g_r]$ calculate $\prod_i^r g_i^{n_i}$.
 
     Multi-exponentiation in the context of elliptic curve groups asks to calculate $\sum_i^r n_i \cdot G_i$ for points $G_i \in C$. 
 
-    Multiscalar multiplication is used throughout cryptography (signature schemes, commitment schemes, zero knowledge proof schemes). 
+    \vspace{10pt}
+    \pause
+
+    Used throughout ECC (signature schemes, commitment schemes, zero knowledge proof schemes). 
 
     In some protocols, $\approx 80\%$ of time in generating zero knowledge proofs is spent calculating multiscalar multiplications.
+
+    \vspace{6pt}
 
     Typical $r$ varies greatly by application, but can get up to sizes like $2^{28}$.
 \end{frame}
@@ -515,7 +611,7 @@ class CurveGroup {F : outParam $ Type _} [Field F] (K : Type _) (C : outParam $ 
 
     Pippenger's algorithm is one of the most efficient optimizations over the naive implementation.
     
-    Suppose the elliptic curve group order is approximately on the order of $b$ bits. Pick a ``window size'' $c$ ($\log r$ turns out to be optimal) so that $b = k \cdot c$. 
+    Suppose the elliptic curve group order is approximately $b$ bits large. Pick a ``window size'' $c$ ($\log r$ turns out to be optimal) so that $b \approx k \cdot c$. 
     \begin{enumerate}
         \item  Decompose each $n_i = n_{i, 0} + n_{i, 1} \cdot 2^c + n_{i, 2} \cdot 2^{2c} + \ldots + n_{i, k} \cdot 2^{k c}$
         \item Split up the large $b$-bit MSM into $k$ separate $c$-bit MSMs:
@@ -550,17 +646,30 @@ class CurveGroup {F : outParam $ Type _} [Field F] (K : Type _) (C : outParam $ 
 \begin{frame}
     \frametitle{A small Demo!}
 
+    All of the above can be found:
+
+    \vspace{30pt}
+
+    \url{https://github.com/yatima-inc/FFaCiL.lean}
+    \vspace{20pt}
+
+    \url{https://github.com/yatima-inc/yatimastdlib.lean}
+
 
 \end{frame}
 \begin{frame}
     \frametitle{Lessons learned}
 
     \begin{enumerate}
-        \item Squeezing performance out of Lean can feel like squeezing water out of stone sometimes.
+        \item Squeezing performance out of Lean can sometimes feel like squeezing water from a stone.
         \item Lean 4 does not have ``zero cost abstractions''. 
-        \item Lean 4 is early in its life, so there are few to no guides written down for writing efficient code.
-        \item There are some significant performance pits one can fall in if one isn't careful with the reference counting.
-        \item Lean 4 is incredibly expressive, it shines in terms of the ease by which one can prototype complex structures and algorithms.
+        \item Lean 4 is early in its life, so there are few guides written down for writing efficient code.
+        \item There are some significant performance pits to fall in if one isn't careful with the reference counting.
+        \pause
+        \vspace{10pt}
+        \item Lean 4 is incredibly expressive, it's easy to prototype complex structures and algorithms that \emph{just work} on the first try.
+        \item The resulting code is beautiful, and very easy to read.
+        \item With time, more FFI work, and more effort I'm certain performance can be competitive.
     \end{enumerate}
 
 \end{frame}
@@ -569,9 +678,10 @@ class CurveGroup {F : outParam $ Type _} [Field F] (K : Type _) (C : outParam $ 
     \frametitle{Future goals}
 
     \begin{enumerate}
-        \item (short term) Optimize, optimize, optimize! (deeper GMP integration, more curve forms, ...)
-        \item (short-medium term) Expand \verb+FFaCiL+ to include more elliptic curve cryptography (isogenies!)
-        \item (medium term) Begin exploring the formalization of provable security (formalizing adversarial games, and complexity)
+        \item (short term) Optimize, optimize, optimize! (deeper GMP integration, more curve forms, ...).
+        \item (short-medium term) Expand \verb+FFaCiL+ to include more elliptic curve cryptography (isogenies!).
+        \item (short-medium term) Actually take advantage of dependent types.
+        \item (medium term) Begin exploring the formalization of provable security (formalizing adversarial games, and complexity).
         \item (long term) Expand the Yatima Standard Library with more number theoretic primitives.
         \item (Long term) Begin the process of formally verifying these algorithms!
         \item (Epochs from now) Combine all of these efforts together into a \verb+cryptolib+ with formally verified cryptographic algorithms.
@@ -581,9 +691,9 @@ class CurveGroup {F : outParam $ Type _} [Field F] (K : Type _) (C : outParam $ 
 
 \begin{frame}
     \frametitle{Thank you for your time!}
-
+    \begin{center}
     Thanks!
-
+    \end{center}
 \end{frame}
 
 \begin{frame}
