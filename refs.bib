@@ -1,3 +1,4 @@
+% A paper recently submitted to ICFP all about the Lurk language, and Yatima's goals for the project.
 @misc{cryptoeprint:2023/369,
       author = {Nada Amin and John Burnham and François Garillot and Rosario Gennaro and Chhi'mèd Künzang and Daniel Rogozin and Cameron Wong},
       title = {LURK: Lambda, the Ultimate Recursive Knowledge},
@@ -7,6 +8,7 @@
       url = {https://eprint.iacr.org/2023/369}
 }
 
+% The paper that describes how to efficiently calculate addition chains (and some optimizations that can be done to minimize their length).
 @article{BERGERON1989403,
 title = {Addition chains using continued fractions},
 journal = {Journal of Algorithms},
@@ -21,6 +23,20 @@ author = {F Bergeron and J Berstel and S Brlek and C Duboc},
 abstract = {This paper introduces a new algorithm for the evaluation of monomials in two variables xayb based upon the continued fraction expansion of ab. A method for fast explicit generation of addition chains of small length for a positive integer n is deduced from this Algorithm. As an illustration of the properties of the method, a Scholz-Brauer-like inequality p(N) ≤ nb + k + p(n + 1), is shown to be true whenever N is an integer of the form 2k(1 + 2b + … + 2nb). Computer experimentation has shown that the length of the chains constructed are of optimal length for all integers up to 1000, with 29 exceptions for which the length is equal to the optimal length plus one.}
 }
 
+% An absolute tome with all of the possible optimizations one can hope to achieve for finite field, and elliptic curve arithmetic.
+@book{cohen2005handbook,
+  title={Handbook of Elliptic and Hyperelliptic Curve Cryptography},
+  author={Cohen, H. and Frey, G. and Avanzi, R. and Doche, C. and Lange, T. and Nguyen, K. and Vercauteren, F.},
+  isbn={9781420034981},
+  lccn={2005041841},
+  series={Discrete Mathematics and Its Applications},
+  url={https://books.google.com/books?id=w6b0yhURTkQC},
+  year={2005},
+  publisher={CRC Press}
+}
+
+
+% This paper spells out the algorithms involved with speeding up scalar multiplication for curve points in the presence of efficient endomorphisms.
 @InProceedings{10.1007/3-540-44647-8_11,
 author="Gallant, Robert P.
 and Lambert, Robert J.
@@ -36,6 +52,7 @@ abstract="The fundamental operation in elliptic curve cryptographic schemes is t
 isbn="978-3-540-44647-7"
 }
 
+% Section 4 describes in detail the implementation of Pippenger's algorithm we used in Lean.
 @misc{cryptoeprint:2012/549,
       author = {Daniel J.  Bernstein and Jeroen Doumen and Tanja Lange and Jan-Jaap Oosterwijk},
       title = {Faster batch forgery identification},
@@ -45,20 +62,18 @@ isbn="978-3-540-44647-7"
       url = {https://eprint.iacr.org/2012/549}
 }
 
-@book{cohen2005handbook,
-  title={Handbook of Elliptic and Hyperelliptic Curve Cryptography},
-  author={Cohen, H. and Frey, G. and Avanzi, R. and Doche, C. and Lange, T. and Nguyen, K. and Vercauteren, F.},
-  isbn={9781420034981},
-  lccn={2005041841},
-  series={Discrete Mathematics and Its Applications},
-  url={https://books.google.com/books?id=w6b0yhURTkQC},
-  year={2005},
-  publisher={CRC Press}
+% A survey paper which describes the state of the art for a number of multiscalar multiplicaton algorithms, and sets the history straight for proper attribution. 
+@inproceedings{Bernstein2002PippengersEA,
+  title={Pippenger's Exponentiation Algorithm},
+  author={Daniel J. Bernstein},
+  year={2002}
 }
 
+% A wonderful book as an introduction to provable security in cryptography.
 @ebook{joyofcryptography,
     title        = "The Joy of Cryptography",
     author       = "Mike Rosulek",
     note         = "\url{https://joyofcryptography.com}",
     url          = "https://joyofcryptography.com"
 } 
+
